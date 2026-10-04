@@ -44,7 +44,7 @@ jobs:
           s = p.read_text()
           s = s.replace("import net.minecraft.world.GameRules;", "import net.minecraft.world.level.GameRules;")
           s = s.replace("import net.minecraftforge.event.world.BiomeLoadingEvent;\n", "")
-          s = re.sub(r"\n\s*@net\\.minecraftforge\\.eventbus\\.api\\.SubscribeEvent\n\s*public void biomeLoading\(BiomeLoadingEvent event\) \{\n\s*WorldGeneration\.addOres\(event\);\n\s*\}\n", "\n", s)
+          s = re.sub(r"\n\s*@SubscribeEvent\s*\n\s*public void biomeLoading\(BiomeLoadingEvent event\)\s*\{\s*\n\s*WorldGeneration\.addOres\(event\);\s*\n\s*\}\s*\n?", "\n", s)
           p.write_text(s)
           p = root / "src/main/java/com/kodari/worldender/compat/CreateNewAgeCompat.java"
           s = p.read_text().replace("blockEntity instanceof EnergyBlockEntity be ? new Adapter(be) : null", "new Adapter(blockEntity)")
