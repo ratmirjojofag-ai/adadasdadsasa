@@ -26,7 +26,7 @@ jobs:
           test ${#zips[@]} -gt 0
           for zip in "${zips[@]}"; do
             echo "Unpacking: $zip"
-            unzip -q "$zip" -d /tmp/worldender
+            unzip -q -o "$zip" -d /tmp/worldender
           done
           echo "Gradle projects found:"
           find /tmp/worldender -type f \( -name build.gradle -o -name build.gradle.kts \) -print
