@@ -15,20 +15,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Find and unpack Worldender source
+      - name: Unpack all source archives
         shell: bash
         run: |
-          set -e
-          ZIP="$(find . -maxdepth 2 -type f -name '*.zip' | head -1)"
-          test -n "$ZIP"
+          set -euxo pipefail
+          rm -rf /tmp/worldender
           mkdir -p /tmp/worldender
-          unzip -q "$ZIP" -d /tmp/worldender
-          NEO="$(find /tmp/worldender -type f -name 'build.gradle' -path '*neoforge-1.21.1*' -printf '%h\n' | head -1)"
-          FORGE="$(find /tmp/worldender -type f -name 'build.gradle' -path '*forge-1.20.1*' -printf '%h\n' | head -1)"
-          test -n "$NEO"
-          test -n "$FORGE"
-          echo "NEO=$NEO" >> "$GITHUB_ENV"
-          echo "FORGE=$FORGE" >> "$GITHUB_ENV"
+          shopt -s nullglob
+          zips=(./*.zip)
+          test ${#zips[@]} -gt 0
+          for zip in "${zips[@]}"; do
+            echo "Unpacking: $zip"
+            unzip -q "$zip" -d /tmp/worldender
+          done
+          echo "Gradle projects found:"
+          find /tmp/worldender -type f \( -name build.gradle -o -name build.gradle.kts \) -print
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -42,8 +43,14 @@ jobs:
           gradle-version: '8.8'
 
       - name: Build Forge 1.20.1
-        run: gradle --no-daemon --stacktrace build
-        working-directory: /tmp/worldender/worldender_ci/forge-1.20.1
+        shell: bash
+        run: |
+          set -euxo pipefail
+          FORGE="$(find /tmp/worldender -type f -name build.gradle -path '*forge-1.20.1*' -printf '%h\n' | head -1)"
+          test -n "$FORGE"
+          echo "Building Forge project: $FORGE"
+          cd "$FORGE"
+          gradle --no-daemon --stacktrace build
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -52,13 +59,19 @@ jobs:
           java-version: '21'
 
       - name: Build NeoForge 1.21.1
-        run: gradle --no-daemon --stacktrace build
-        working-directory: /tmp/worldender/worldender_ci/neoforge-1.21.1
+        shell: bash
+        run: |
+          set -euxo pipefail
+          NEO="$(find /tmp/worldender -type f -name build.gradle -path '*neoforge-1.21.1*' -printf '%h\n' | head -1)"
+          test -n "$NEO"
+          echo "Building NeoForge project: $NEO"
+          cd "$NEO"
+          gradle --no-daemon --stacktrace build
 
       - name: Collect JARs
         shell: bash
         run: |
-          set -e
+          set -euxo pipefail
           mkdir -p artifacts
           find /tmp/worldender -type f -path '*/build/libs/*.jar' -exec cp {} artifacts/ \;
           ls -lah artifacts
